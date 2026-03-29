@@ -1,0 +1,933 @@
+<!DOCTYPE html>
+<html lang="ta">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>CureX Pro </title>
+    <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;600;700&display=swap" rel="stylesheet">
+    <style>
+        :root {
+            --medical-blue: #ff8b07;
+            --light-blue: #efeff0;
+            --success: #0a7d10;
+            --danger: #ef1010;
+            --warning: #d0f500;
+            --text-dark: #090909;
+        }
+
+        body {
+            font-family: 'Poppins', sans-serif;
+            color: var(--text-dark);
+            margin: 0;
+            padding: 0;
+            background-image: linear-gradient(rgba(0,0,0,0.6),rgba(0,0,0,0.6)),url(images/dna-bg.jpg.jpeg);
+            background-size: cover;
+            background-position: center;
+            background-attachment: fixed;
+            background-repeat: no-repeat;
+        }
+
+        .header {
+            background: rgba(16, 7, 69, 0.903);
+            color: rgb(255, 255, 255);
+            padding: 40px 20px;
+            text-align: center;
+            border-bottom: 5px solid #77ef9b;
+        }
+
+        .container { max-width: 1200px; margin: 20px auto; padding: 20px; }
+
+        .search-panel {
+            background: var(--light-blue);
+            padding: 25px;
+            border-radius: 15px;
+            text-align: center;
+            margin-bottom: 30px;
+            box-shadow: 0 4px 10px rgba(4, 4, 4, 0.944);
+        }
+
+        select {
+            width: 100%; max-width: 600px; padding: 15px; border-radius: 10px;
+            border: 2px solid var(--medical-blue); font-size: 16px; font-weight: 600;
+        }
+
+        .btn-group { margin-top: 15px; display: flex; gap: 10px; justify-content: center; }
+        .btn { padding: 12px 25px; border-radius: 5px; border: none; font-weight: bold; cursor: pointer; text-decoration: none; color: rgb(251, 250, 250); display: flex; align-items: center; gap: 8px; }
+        .btn-voice { background: var(--medical-blue); }
+        .btn-emergency { background: var(--danger); }
+
+        #result-area { display: none; }
+        .disease-name { color: var(--medical-blue); text-align: center; border-bottom: 2px solid var(--light-blue); padding-bottom: 10px; margin-bottom: 25px; font-size: 28px; }
+
+        .info-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(350px, 1fr)); gap: 20px; }
+
+        .card {
+            background: #fce8b4;
+            padding: 20px;
+            border-radius: 10px;
+            border: 1px solid #736f6f;
+            border-left: 6px solid var(--medical-blue);
+            box-shadow: 0 5px 15px rgb(113, 112, 112);
+            transition: 0.3s;
+        }
+        .card:hover { transform: translateY(-5px); }
+
+        .label { color: var(--medical-blue); font-weight: 700; font-size: 13px; text-transform: uppercase; display: block; margin-bottom: 8px; }
+        .en-text { font-size: 16px; font-weight: 600; color: #000000; display: block; }
+        .ta-text { font-size: 14px; color: #2e2d2d; font-style: italic; display: block; margin-top: 4px; }
+
+        .card-danger { border-left-color: var(--danger); background: #ffcbcb; }
+        .card-success { border-left-color: var(--success); background: #c7f8c7; }
+        .card-warning { border-left-color: var(--warning); background: #f2f89f; }
+
+        .spec-section { margin-top: 50px; background: #bcbcff; padding: 25px; border-radius: 15px; border: 1px solid #e0e0e0; }
+        table { width: 100%; border-collapse: collapse; background: rgb(184, 184, 185); margin-top: 15px; }
+        th { background: var(--medical-blue); color: rgb(255, 255, 255); padding: 12px; text-align: left; }
+        td { padding: 12px; border-bottom: 1px solid #06246f; font-size: 14px; }
+
+        .disclaimer { text-align: center; padding: 30px; font-size: 12px; color: #fbfbfb; border-top: 1px solid #eee; margin-top: 40px; }
+    </style>
+</head>
+<body>
+
+<div class="header">   
+    <h1>CUREX PRO </h1>
+    <p>Comprehensive Study on Health & Recovery </p>
+</div>
+
+<div class="container">
+    <div class="search-panel">
+        <select id="diseaseSelect" onchange="updateDisplay()">
+            <option value="">-- Search Diseases --</option>
+        </select>
+        <div class="btn-group">
+           <button class="btn btn-voice" id="voiceBtn">  voice search</button>
+        </div>
+        <p id="vStatus" style="color: var(--medical-blue); font-weight: bold; margin-top: 10px;"></p>
+    </div>
+
+    <div id="result-area">
+        <h2 class="disease-name" id="dTitle"></h2>
+        <div class="info-grid" id="infoGrid"></div>
+    </div>
+
+    <div class="spec-section">
+        <h3>🏥 Specialist Reference Dictionary / மருத்துவ நிபுணர்கள்</h3>
+        <table>
+            <thead>
+                <tr><th>Department</th><th>English Meaning</th><th>Tamil Explanation</th></tr>
+            </thead>
+            <tbody id="specTable"></tbody>
+        </table>
+    </div>
+
+    <div class="disclaimer">
+        <b>Disclaimer:</b> Educational purpose only,if you want more details call doctors. <br>
+        <b>குறிப்பு:</b> இது கல்வித் தேவைக்கானது மட்டுமே. மருத்துவ ஆலோசனைக்கு மருத்துவரை அனுகவும்.
+    </div>
+</div>
+
+<script>
+const diseases = [
+    {
+        n: "Typhoid Fever", t: "டைபாய்டு காய்ச்சல்",
+        s: "Step-ladder fever, headache, stomach pain, weakness, rose spots.",
+        ts: "படிப்படியாக உயரும் காய்ச்சல், தலைவலி, வயிற்று வலி, பலவீனம்.",
+        dur: "14-21 Days.", td: "14-21 நாட்கள்.",
+        fa: "Hydrate with ORS, lukewarm sponge bath for fever.", tfa: "ORS நீர் அருந்தவும், வெதுவெதுப்பான நீரில் உடலைத் துடைக்கவும்.",
+        dt: "Bland diet (Porridge, Boiled eggs). No spice/oil.", tdt: "கஞ்சி, வேகவைத்த முட்டை. காரம் தவிர்க்கவும்.",
+        rem: "Ginger tea, honey, garlic in diet.", trem: "இஞ்சி டீ, தேன், உணவில் பூண்டு.",
+        pre: "Clean drinking water, hand washing, food hygiene.", tpre: "சுத்தமான குடிநீர், கை கழுவுதல், உணவு சுத்தம்.",
+        adv: "Complete full antibiotic course. Don't stop early.", tadv: "மருந்துகளை முழுமையாக முடிக்கவும்.",
+        dan: "Severe belly pain, black stools, high fever >104F.", tdan: "கடும் வயிற்று வலி, கருப்பு மலம், அதிக காய்ச்சல்.",
+        sh: "If fever remains high after 3 days of meds.", tsh: "3 நாட்கள் மருந்து எடுத்தும் காய்ச்சல் குறையாவிடில்.",
+        sp: "General Physician"
+    },
+    {
+        n: "Dengue", t: "டெங்கு",
+        s: "High fever, joint pain, nausea, pain behind eyes.",
+        ts: "கடும் காய்ச்சல், மூட்டு வலி, வாந்தி, கண்களுக்குப் பின் வலி.",
+        dur: "7-10 Days.", td: "7-10 நாட்கள்.",
+        fa: "Hydration, rest, avoid aspirin.", tfa: "நிறைய நீர் குடிக்கவும், ஆஸ்பிரின் தவிர்க்கவும்.",
+        dt: "Coconut water, Papaya leaf extract, Fruit juices.", tdt: "இளநீர், பப்பாளி இலை சாறு, பழச்சாறு.",
+        rem: "Giloy juice, goat milk, complete bed rest.", trem: "சீந்தில் கொடி சாறு, ஆட்டுப்பால், முழு ஓய்வு.",
+        pre: "Remove stagnant water, use mosquito nets.", tpre: "தண்ணீர் தேங்காமல் பார்த்துக் கொள்ளவும், கொசுவலை பயன்படுத்தவும்.",
+        adv: "Monitor platelet count daily.", tadv: "தினமும் இரத்த தட்டணுக்கள் எண்ணிக்கையை கவனிக்கவும்.",
+        dan: "Bleeding gums, nose bleeds, rapid breathing.", tdan: "ஈறுகளில் இரத்தம், மூக்கில் இரத்தம், மூச்சுத் திணறல்.",
+        sh: "If platelets drop below 1 lakh or severe weakness.", tsh: "தட்டணுக்கள் 1 லட்சத்திற்கு கீழ் குறைந்தால் அணுகவும்.",
+        sp: "General Physician / MD"
+    },
+    {
+        n: "Asthma", t: "ஆஸ்துமா",
+        s: "Wheezing, chest tightness, coughing at night.",
+        ts: "இழுப்புச் சத்தம், நெஞ்சு இறுக்கம், இரவு நேர இருமல்.",
+        dur: "Chronic (Long-term).", td: "நீண்ட கால பாதிப்பு.",
+        fa: "Sit upright, use reliever inhaler.", tfa: "நேராக உட்கார வைக்கவும், இன்ஹேலரை பயன்படுத்தவும்.",
+        dt: "Vitamin D rich foods, greens, nuts.", tdt: "வைட்டமின் D உணவுகள், கீரை, நட்ஸ்.",
+        rem: "Steam inhalation, hot herbal tea.", trem: "ஆவி பிடித்தல், சூடான மூலிகை டீ.",
+        pre: "Avoid dust, smoke, and pets triggers.", tpre: "தூசி, புகை மற்றும் செல்லப் பிராணிகளைத் தவிர்க்கவும்.",
+        adv: "Keep inhaler always reachable.", tadv: "எப்போதும் இன்ஹேலரை அருகில் வைத்திருக்கவும்.",
+        dan: "Inhaler no effect, blue lips, gasping.", tdan: "இன்ஹேலர் வேலை செய்யாமை, நீல நிற உதடுகள்.",
+        sh: "Unable to talk or walk due to breath loss.", tsh: "மூச்சுத் திணறலால் பேச முடியாமல் போனால்.",
+        sp: "Pulmonologist"
+    },
+    {
+        n: "Anemia", t: "இரத்த சோகை",
+        s: "Fatigue, pale skin, cold hands, dizziness.",
+        ts: "அதிக சோர்வு, வெளிறிய தோல், மயக்கம்.",
+        dur: "1-3 Months.", td: "1-3 மாதங்கள்.",
+        fa: "If fainted: Lift legs above heart level.", tfa: "மயக்கம் வந்தால் கால்களை உயர்த்தி வைத்து படுக்க வைக்கவும்.",
+        dt: "Dates, Moringa, Beetroot, Jaggery.", tdt: "பேரிச்சை, முருங்கை, பீட்ரூட், வெல்லம்.",
+        rem: "Soaked black raisins, amla juice with honey.", trem: "ஊறவைத்த உலர் திராட்சை, தேன் நெல்லிக்காய்.",
+        pre: "Iron-rich diet, avoid tea after meals.", tpre: "இரும்புச்சத்து உணவு, உணவுக்குப் பின் டீ தவிர்க்கவும்.",
+        adv: "Check hemoglobin levels regularly.", tadv: "இரத்த சிவப்பணு அளவை பரிசோதிக்கவும்.",
+        dan: "Chest pain, rapid heartbeat, severe breathlessness.", tdan: "நெஞ்சு வலி, வேகமான இதயத் துடிப்பு.",
+        sh: "Fainting episodes or unable to do daily tasks.", tsh: "அடிக்கடி மயக்கம் அல்லது அன்றாட வேலை செய்ய முடியாமை.",
+        sp: "Hematologist"
+    },
+    {
+        n: "Diabetes", t: "சர்க்கரை நோய்",
+        s: "Frequent urination, excessive thirst, slow healing wounds.",
+        ts: "அடிக்கடி சிறுநீர் கழித்தல், அதிக தாகம், ஆறாத புண்கள்.",
+        dur: "Life-long management.", td: "வாழ்க்கை முறை பராமரிப்பு.",
+        fa: "If low sugar (shaking): Give glucose or sweet fruit juice.", tfa: "சர்க்கரை குறைந்தால் குளுக்கோஸ் அல்லது இனிப்புச் சாறு தரவும்.",
+        dt: "High fiber, whole grains, avoid sugar/refined flour.", tdt: "அதிக நார்ச்சத்து, சிறுதானியங்கள், சர்க்கரை தவிர்க்கவும்.",
+        rem: "Fenugreek seeds soaked in water, Bitter gourd juice.", trem: "ஊறவைத்த வெந்தயம், பாகற்காய் சாறு.",
+        pre: "Regular exercise, maintain healthy weight.", tpre: "தொடர் உடற்பயிற்சி, உடல் எடையை சீராக வைத்தல்.",
+        adv: "Check blood sugar levels once a month.", tadv: "மாதம் ஒருமுறை சர்க்கரை அளவு பரிசோதிக்கவும்.",
+        dan: "Confusion, fruity breath, vision loss.", tdan: "குழப்பம், பார்வை மங்குதல், அதிக மயக்கம்.",
+        sh: "If blood sugar is very high (>300) or very low (<70).", tsh: "சர்க்கரை அளவு மிக அதிகம் அல்லது மிகக் குறைவாக இருந்தால்.",
+        sp: "Diabetologist / Endocrinologist"
+    },
+    {
+        n: "Hypertension", t: "உயர் இரத்த அழுத்தம்",
+        s: "Headache, nosebleed, chest pain, vision changes.",
+        ts: "தலைவலி, மூக்கில் இரத்தம், நெஞ்சு வலி, பார்வை மாற்றம்.",
+        dur: "Chronic.", td: "நீண்ட கால பாதிப்பு.",
+        fa: "Rest in quiet place, take prescribed BP medicine.", tfa: "அமைதியான இடத்தில் ஓய்வு, பிபி மருந்து எடுத்தல்.",
+        dt: "Low salt, DASH diet, bananas, flax seeds.", tdt: "உப்பு குறைத்தல், வாழைப்பழம், ஆளி விதைகள்.",
+        rem: "Garlic, Hibiscus tea, reducing stress.", trem: "பூண்டு, செம்பருத்தி டீ, மன அழுத்தம் குறைத்தல்.",
+        pre: "Avoid smoking/alcohol, reduce salt.", tpre: "புகை/மது தவிர்க்கவும், உப்பு குறைக்கவும்.",
+        adv: "Monitor BP at home regularly.", tadv: "வீட்டிலேயே இரத்த அழுத்தத்தை பரிசோதிக்கவும்.",
+        dan: "Severe chest pain, slurred speech, one-sided numbness.", tdan: "கடும் நெஞ்சு வலி, பேச்சு குழறல், பக்கவாட்டு மரத்துப் போதல்.",
+        sh: "Sudden high BP (>180/120) with headache.", tsh: "அதிக இரத்த அழுத்தத்துடன் கடும் தலைவலி இருந்தால்.",
+        sp: "Cardiologist"
+    },
+    {
+        n: "Kidney Stones", t: "சிறுநீரகக் கற்கள்",
+        s: "Severe back pain, nausea, painful urination.",
+        ts: "கடும் முதுகு வலி, வாந்தி, சிறுநீர் கழிக்கையில் வலி.",
+        dur: "1-4 Weeks.", td: "1-4 வாரங்கள்.",
+        fa: "Drink plenty of water, use heat pad for pain.", tfa: "அதிக நீர் குடிக்கவும், வலிக்கு வெப்ப ஒத்தடம்.",
+        dt: "Banana pith, barley water, low salt.", tdt: "வாழைத்தண்டு, பார்லி தண்ணீர், குறைந்த உப்பு.",
+        rem: "Lemon juice, drinking 3-4 liters water daily.", trem: "எலுமிச்சை சாறு, தினமும் 4 லிட்டர் தண்ணீர்.",
+        pre: "Stay hydrated, don't hold urine.", tpre: "அதிக நீர் குடிக்கவும், சிறுநீரை அடக்க வேண்டாம்.",
+        adv: "Avoid high-oxalate foods (Spinach, Tomato).", tadv: "தக்காளி, கீரை போன்றவற்றைத் தவிர்க்கவும்.",
+        dan: "Blood in urine, inability to urinate, high fever.", tdan: "சிறுநீரில் இரத்தம், சிறுநீர் கழிக்க முடியாமை.",
+        sh: "Pain is unbearable or severe vomiting occurs.", tsh: "வலி தாங்க முடியாவிட்டால் உடனே செல்லவும்.",
+        sp: "Urologist"
+    },
+    {
+        n: "Jaundice", t: "மஞ்சள் காமாலை",
+        s: "Yellow eyes/skin, dark urine, pale stools.",
+        ts: "மஞ்சள் நிற கண்கள், கரும் மஞ்சள் சிறுநீர்.",
+        dur: "2-6 Weeks.", td: "2-6 வாரங்கள்.",
+        fa: "Strict bed rest, low fat diet.", tfa: "முழு ஓய்வு, கொழுப்பு இல்லாத உணவு.",
+        dt: "Sugarcane juice, boiled veg, buttermilk.", tdt: "கரும்புச் சாறு, வேகவைத்த காய்கறிகள், மோர்.",
+        rem: "Kizhanelli paste with buttermilk.", trem: "கீழாநெல்லி மற்றும் மோர்.",
+        pre: "Hepatitis vaccine, avoid contaminated water.", tpre: "தடுப்பூசி, அசுத்தமான நீரைத் தவிர்க்கவும்.",
+        adv: "Avoid alcohol for 1 year post recovery.", tadv: "குணமான பின் 1 வருடம் மது தவிர்க்கவும்.",
+        dan: "Extreme confusion, swelling in stomach/legs.", tdan: "மிகுந்த குழப்பம், வயிறு அல்லது கால் வீக்கம்.",
+        sh: "Skin turns deep orange or mental confusion starts.", tsh: "தோல் கடும் ஆரஞ்சு நிறமானால் உடனே அணுகவும்.",
+        sp: "Gastroenterologist"
+    },
+    {
+        n: "Migraine", t: "ஒற்றைத் தலைவலி",
+        s: "One-sided headache, light sensitivity, nausea.",
+        ts: "ஒரு பக்க தலைவலி, வெளிச்சம் கண்டால் வலி.",
+        dur: "4-72 Hours.", td: "4-72 மணிநேரம்.",
+        fa: "Rest in dark quiet room, cold compress.", tfa: "இருட்டான அறையில் ஓய்வு, குளிர்ந்த ஒத்தடம்.",
+        dt: "Almonds, ginger, magnesium rich foods.", tdt: "பாதாம், இஞ்சி, மெக்னீசியம் உணவுகள்.",
+        rem: "Peppermint oil massage, ginger tea.", trem: "புதினா ஆயில் மசாஜ், இஞ்சி டீ.",
+        pre: "Regular sleep, identify food triggers.", tpre: "சரியான உறக்கம், ஒவ்வாமை உணவைத் தவிர்த்தல்.",
+        adv: "Keep a headache diary.", tadv: "தலைவலி வரும் நேரத்தை குறித்து வைக்கவும்.",
+        dan: "Sudden thunderclap headache, fainting.", tdan: "திடீர் கடும் தலைவலி, மயக்கம்.",
+        sh: "If headaches occur more than 15 days a month.", tsh: "மாதத்தில் 15 நாட்களுக்கு மேல் தலைவலி இருந்தால்.",
+        sp: "Neurologist"
+    },
+    {
+        n: "Malaria", t: "மலேரியா",
+        s: "Chills, high fever, sweating, muscle pain.",
+        ts: "குளிர் காய்ச்சல், அதிக வியர்வை, தசை வலி.",
+        dur: "7-14 Days.", td: "7-14 நாட்கள்.",
+        fa: "Hydration, keep room temp moderate.", tfa: "நிறைய நீர், அறையை காற்றோட்டமாக வைத்தல்.",
+        dt: "Warm soup, fruit juice, light rice.", tdt: "சூடான சூப், பழச்சாறு, லேசான சாதம்.",
+        rem: "Cinnamon boiled water, holy basil (Tulsi).", trem: "இலவங்கப்பட்டை நீர், துளசி.",
+        pre: "Use mosquito repellents/nets.", tpre: "கொசு விரட்டிகள் அல்லது வலை பயன்படுத்தவும்.",
+        adv: "Blood test is mandatory for diagnosis.", tadv: "இரத்தப் பரிசோதனை மிக அவசியம்.",
+        dan: "Seizures, breathing trouble, severe anemia.", tdan: "வலிப்பு, சுவாசக் கோளாறு, கடும் இரத்த சோகை.",
+        sh: "If fever returns after treatment or fits occur.", tsh: "சிகிச்சைக்குப் பின் காய்ச்சல் திரும்பினால் அணுகவும்.",
+        sp: "General Physician"
+    },
+    {
+        n: "Pneumonia", t: "நிமோனியா",
+        s: "Chest pain, cough with phlegm, fever, fatigue.",
+        ts: "நெஞ்சு வலி, சளியுடன் இருமல், காய்ச்சல்.",
+        dur: "2-4 Weeks.", td: "2-4 வாரங்கள்.",
+        fa: "Sit propped up, keep warm, hydrate.", tfa: "சாய்ந்த நிலையில் உட்கார வைக்கவும், இதமாக இருக்கவும்.",
+        dt: "Warm fluids, turmeric milk, Vitamin C.", tdt: "சூடான திரவங்கள், மஞ்சள் பால், வைட்டமின் சி.",
+        rem: "Garlic, ginger, salt water gargling.", trem: "பூண்டு, இஞ்சி, உப்பு நீர் கொப்பளித்தல்.",
+        pre: "Pneumococcal vaccine, no smoking.", tpre: "தடுப்பூசி, புகைப்பிடித்தல் தவிர்க்கவும்.",
+        adv: "Complete bed rest and antibiotics.", tadv: "முழு ஓய்வு மற்றும் மருந்துகள் அவசியம்.",
+        dan: "Blue lips/nails, inability to catch breath.", tdan: "நீல நிற உதடுகள், மூச்சு விட முடியாமை.",
+        sh: "Fever >103F or blood in phlegm.", tsh: "103F மேல் காய்ச்சல் அல்லது சளியில் இரத்தம்.",
+        sp: "Pulmonologist"
+    },
+    {
+        n: "Chickenpox", t: "சின்னம்மை",
+        s: "Red itchy blisters, fever, fatigue.",
+        ts: "அரிப்பு கொப்புளங்கள், காய்ச்சல், சோர்வு.",
+        dur: "7-10 Days.", td: "7-10 நாட்கள்.",
+        fa: "Calamine lotion, lukewarm bath, trim nails.", tfa: "கலமைன் லோஷன், வெதுவெதுப்பான குளியல்.",
+        dt: "Soft diet, plenty of water, curd rice.", tdt: "மென்மையான உணவு, அதிக நீர், தயிர் சாதம்.",
+        rem: "Neem leaves in bath, sandalwood paste.", trem: "வேப்பிலை குளியல், சந்தன விழுது.",
+        pre: "Varicella vaccine, avoid patient contact.", tpre: "தடுப்பூசி, நோயாளியைத் தொட வேண்டாம்.",
+        adv: "Do not scratch blisters to avoid scars.", tadv: "கொப்புளங்களைச் சொறிய வேண்டாம்.",
+        dan: "High fever, infection of blisters, confusion.", tdan: "அதிக காய்ச்சல், கொப்புளங்களில் சீழ்.",
+        sh: "If rash spreads to eyes or breathing difficulty.", tsh: "கண்களுக்குப் பரவினாலோ அல்லது மூச்சுத் திணறல் இருந்தாலோ.",
+        sp: "Dermatologist"
+    },
+    {
+        n: "Gastritis", t: "வயிற்றுப்புண்",
+        s: "Stomach burning, bloating, nausea.",
+        ts: "வயிற்று எரிச்சல், உப்பசம், வாந்தி உணர்வு.",
+        dur: "2-5 Days.", td: "2-5 நாட்கள்.",
+        fa: "Cold milk, antacid, sit upright.", tfa: "குளிர்ந்த பால், அசிடிட்டி மருந்து.",
+        dt: "Oats, bananas, avoid spicy/fried foods.", tdt: "ஓட்ஸ், வாழைப்பழம், காரம் தவிர்க்கவும்.",
+        rem: "Coconut water, fennel seeds after meal.", trem: "இளநீர், சாப்பிட்ட பின் சோம்பு.",
+        pre: "Small frequent meals, avoid alcohol/smoke.", tpre: "சிறிய அளவில் அடிக்கடி உண்ணவும்.",
+        adv: "Don't skip breakfast. Avoid late night meals.", tadv: "காலை உணவைத் தவிர்க்க வேண்டாம்.",
+        dan: "Vomiting blood, black stools, severe pain.", tdan: "வாந்தியில் இரத்தம், கருப்பு மலம்.",
+        sh: "Sudden sharp pain in upper abdomen.", tsh: "வயிற்றின் மேல் பகுதியில் திடீர் கடும் வலி.",
+        sp: "Gastroenterologist"
+    },
+    {
+        n: "Arthritis", t: "மூட்டு வலி",
+        s: "Joint pain, stiffness in morning, swelling.",
+        ts: "மூட்டு வலி, காலையில் பிடிப்பு, வீக்கம்.",
+        dur: "Chronic.", td: "நீண்ட கால பாதிப்பு.",
+        fa: "Ice pack for swelling, warm pad for stiffness.", tfa: "வீக்கத்திற்கு ஐஸ், பிடிப்பிற்கு வெப்ப ஒத்தடம்.",
+        dt: "Omega-3 (Fish, Walnuts), Turmeric, Ginger.", tdt: "மீன், நட்ஸ், மஞ்சள், இஞ்சி.",
+        rem: "Massage with warm oil, mild yoga.", trem: "வெதுவெதுப்பான எண்ணெய் மசாஜ், யோகா.",
+        pre: "Maintain weight, regular exercise.", tpre: "உடல் எடை குறைத்தல், உடற்பயிற்சி.",
+        adv: "Avoid prolonged sitting or standing.", tadv: "அதிக நேரம் ஒரே இடத்தில் உட்காரவோ நிற்கவோ கூடாது.",
+        dan: "Inability to walk, sudden redness/heat in joint.", tdan: "நடக்க முடியாமை, மூட்டுகளில் கடும் சிவப்பு.",
+        sh: "If joint pain is accompanied by fever.", tsh: "மூட்டு வலியுடன் காய்ச்சல் இருந்தால்.",
+        sp: "Rheumatologist"
+    },
+    {
+        n: "Common Cold", t: "சாதாரண சளி",
+        s: "Runny nose, sneezing, sore throat.",
+        ts: "மூக்கு ஒழுகுதல், தும்மல், தொண்டை வலி.",
+        dur: "3-7 Days.", td: "3-7 நாட்கள்.",
+        fa: "Rest, salt water gargle, warm fluids.", tfa: "ஓய்வு, உப்பு நீர் கொப்பளித்தல்.",
+        dt: "Soup, herbal tea, Vitamin C fruits.", tdt: "சூப், மூலிகை டீ, ஆரஞ்சு.",
+        rem: "Ginger pepper tea, Tulsi juice.", trem: "இஞ்சி மிளகு டீ, துளசி.",
+        pre: "Hand wash, avoid cold exposure.", tpre: "கை கழுவுதல், குளிர்ச்சியான இடங்களைத் தவிர்த்தல்.",
+        adv: "Antibiotics are not effective for viral cold.", tadv: "வைரஸ் சளிக்கு ஆன்டிபயாடிக் வேலை செய்யாது.",
+        dan: "High fever, ear pain, sinus pressure.", tdan: "அதிக காய்ச்சல், காது வலி.",
+        sh: "If symptoms last more than 10 days.", tsh: "10 நாட்களுக்கு மேல் சளி குறையாவிடில்.",
+        sp: "ENT Specialist"
+    },
+    {
+        n: "Tuberculosis (TB)", t: "காசநோய்",
+        s: "Persistent cough >3 weeks, weight loss, night sweat.",
+        ts: "3 வாரங்களுக்கு மேல் இருமல், எடை குறைவு.",
+        dur: "6-9 Months Treatment.", td: "6-9 மாத சிகிச்சை.",
+        fa: "Isolate patient, cover mouth while coughing.", tfa: "நோயாளியைத் தனிமைப்படுத்துதல், இருமும்போது மூடுதல்.",
+        dt: "High protein, eggs, milk, fruits.", tdt: "அதிக புரதம், முட்டை, பால், பழங்கள்.",
+        rem: "Healthy food, garlic, complete rest.", trem: "சத்தான உணவு, பூண்டு, முழு ஓய்வு.",
+        pre: "BCG vaccine, ventilation in house.", tpre: "பிசிஜி தடுப்பூசி, வீட்டில் காற்றோட்டம்.",
+        adv: "Never skip DOTS medication even for a day.", tadv: "மருந்துகளை ஒரு நாள் கூட தவிர்க்க வேண்டாம்.",
+        dan: "Coughing blood, extreme breathlessness.", tdan: "இருமும்போது இரத்தம், மூச்சுத் திணறல்.",
+        sh: "If you have a cough that won't go away for weeks.", tsh: "பல வாரங்கள் இருமல் தொடர்ந்தால் அணுகவும்.",
+        sp: "Pulmonologist"
+    },
+    {
+        n: "Urinary Tract Infection", t: "சிறுநீர் தொற்று",
+        s: "Burning during urination, frequent urge, pelvic pain.",
+        ts: "சிறுநீர் கழிக்கையில் எரிச்சல், அடிவயிற்று வலி.",
+        dur: "3-7 Days.", td: "3-7 நாட்கள்.",
+        fa: "Drink 2 glasses of water immediately.", tfa: "உடனடியாக 2 டம்ளர் நீர் குடிக்கவும்.",
+        dt: "Cranberry juice, plenty of water, curd.", tdt: "கிரான்பெர்ரி சாறு, அதிக நீர், தயிர்.",
+        rem: "Lemon water, barley water.", trem: "எலுமிச்சை நீர், பார்லி தண்ணீர்.",
+        pre: "Proper hygiene, drink enough water.", tpre: "சுத்தம் பேணுதல், தேவையான நீர் அருந்துதல்.",
+        adv: "Complete the full antibiotic course.", tadv: "மருந்துகளை முழுமையாக முடிக்கவும்.",
+        dan: "Kidney pain (lower back), high fever with chills.", tdan: "முதுகு வலி, காய்ச்சல் மற்றும் குளிர்.",
+        sh: "If fever or vomiting starts with burning urination.", tsh: "எரிச்சலுடன் காய்ச்சல் அல்லது வாந்தி இருந்தால்.",
+        sp: "Urologist / Gynecologist"
+    },
+    {
+        n: "Cholera", t: "காலரா",
+        s: "Rice-water stools, rapid dehydration, leg cramps.",
+        ts: "நீர் போன்ற மலம், உடல் வறட்சி, தசைப் பிடிப்பு.",
+        dur: "3-5 Days.", td: "3-5 நாட்கள்.",
+        fa: "ORS or Salt-Sugar solution every 10 mins.", tfa: "ஒவ்வொரு 10 நிமிடமும் ORS நீர்.",
+        dt: "Liquid diet, ORS, avoid solid food till better.", tdt: "திரவ உணவு, ORS நீர்.",
+        rem: "Ginger water, lemon with pinch of salt.", trem: "இஞ்சி நீர், எலுமிச்சை உப்பு நீர்.",
+        pre: "Drink boiled water, wash food properly.", tpre: "காய்ச்சிய நீர், உணவைச் சுத்தமாக கழுவுதல்.",
+        adv: "Immediate rehydration is life-saving.", tadv: "உடல் வறட்சியை உடனே சரி செய்தல் அவசியம்.",
+        dan: "Sunken eyes, no urine for hours, skin tenting.", tdan: "குழி விழுந்த கண்கள், சிறுநீர் கழிக்க முடியாமை.",
+        sh: "Severe watery diarrhea that doesn't stop.", tsh: "நிற்காத நீர் போன்ற வயிற்றுப்போக்கு இருந்தால்.",
+        sp: "General Physician"
+    },
+    {
+        n: "Obesity", t: "உடல் பருமன்",
+        s: "Excessive weight, breathlessness, snoring, joint pain.",
+        ts: "அதிக எடை, மூச்சுத் திணறல், குரட்டை, மூட்டு வலி.",
+        dur: "Chronic lifestyle issue.", td: "நீண்ட கால வாழ்க்கை முறை பிரச்சனை.",
+        fa: "Start with 15 mins brisk walk today.", tfa: "இன்றே 15 நிமிடம் நடைப்பயிற்சி தொடங்கவும்.",
+        dt: "Low carb, high protein, more vegetables.", tdt: "குறைந்த மாவுச்சத்து, அதிக காய்கறிகள்.",
+        rem: "Warm water with lemon/honey in morning.", trem: "காலை வெதுவெதுப்பான நீர், எலுமிச்சை, தேன்.",
+        pre: "Daily exercise, avoid junk food/soda.", tpre: "தினமும் உடற்பயிற்சி, ஜங்க் புட் தவிர்க்கவும்.",
+        adv: "Aim for gradual weight loss (2-4 kg/month).", tadv: "படிப்படியாக எடையைக் குறைக்கவும்.",
+        dan: "Severe chest pain, sleep apnea (stopping breath).", tdan: "நெஞ்சு வலி, தூக்கத்தில் மூச்சுத் திணறல்.",
+        sh: "If obesity causes heart or sugar issues.", tsh: "பருமனால் இதயம் அல்லது சர்க்கரை நோய் வந்தால்.",
+        sp: "Bariatric Specialist / Dietitian"
+    },
+    {
+        n: "Depression", t: "மன அழுத்தம்",
+        s: "Persistent sadness, loss of interest, sleep issues.",
+        ts: "தொடர் கவலை, எதிலும் ஈடுபாடின்மை, தூக்கமின்மை.",
+        dur: "Varies (Months to Years).", td: "மாதங்கள் முதல் வருடங்கள் வரை.",
+        fa: "Talk to a trusted friend or family member.", tfa: "நண்பர் அல்லது குடும்பத்தினரிடம் பேசவும்.",
+        dt: "Fruits, Omega-3, nuts, avoid alcohol.", tdt: "பழங்கள், நட்ஸ், மது தவிர்க்கவும்.",
+        rem: "Meditation, yoga, spending time in nature.", trem: "தியானம், யோகா, இயற்கையோடு நேரம் செலவிடல்.",
+        pre: "Manage stress, get 8 hours sleep.", tpre: "மன அழுத்தத்தைக் குறைக்கவும், 8 மணி நேர உறக்கம்.",
+        adv: "Mental health is as important as physical health.", tadv: "மனநலமும் உடல்நலமும் ஒன்றே.",
+        dan: "Suicidal thoughts, total withdrawal from society.", tdan: "தற்கொலை எண்ணம், சமூகத்திலிருந்து விலகல்.",
+        sh: "If you feel hopeless or have self-harm thoughts.", tsh: "நம்பிக்கையற்ற உணர்வு அல்லது தற்கொலை எண்ணம் வந்தால்.",
+        sp: "Psychiatrist / Psychologist"
+    },
+    {
+        n: "Thyroid (Hypo)", t: "தைராய்டு",
+        s: "Weight gain, fatigue, hair loss, cold sensitivity.",
+        ts: "உடல் எடை கூடுதல், சோர்வு, முடி கொட்டுதல்.",
+        dur: "Life-long management.", td: "நீண்ட கால பராமரிப்பு.",
+        fa: "Take thyroid meds on empty stomach daily.", tfa: "வெறும் வயிற்றில் தைராய்டு மருந்து எடுத்தல்.",
+        dt: "Iodized salt, fiber, avoid excess cabbage.", tdt: "அயோடின் உப்பு, முட்டைக்கோஸ் தவிர்க்கவும்.",
+        rem: "Coriander seed water, yoga (Fish pose).", trem: "தனியா விதை நீர், யோகா.",
+        pre: "Regular checkups, balanced diet.", tpre: "தொடர் பரிசோதனை, சீரான உணவு.",
+        adv: "Don't stop meds without doctor's advice.", tadv: "மருத்துவர் இன்றி மருந்தை நிறுத்த வேண்டாம்.",
+        dan: "Severe swelling in neck, extreme slow heart rate.", tdan: "கழுத்தில் அதிக வீக்கம், மெதுவான இதயத்துடிப்பு.",
+        sh: "If fatigue prevents normal life or neck swells.", tsh: "அதிக சோர்வு அல்லது கழுத்து வீக்கம் இருந்தால்.",
+        sp: "Endocrinologist"
+    },
+    {
+        n: "Hemorrhoids (Piles)", t: "மூல நோய்",
+        s: "Bleeding during stools, itching, pain in anal area.",
+        ts: "மலத்தில் இரத்தம், அரிப்பு, ஆசனவாய் வலி.",
+        dur: "1-2 Weeks / Chronic.", td: "1-2 வாரங்கள்.",
+        fa: "Sitz bath (sitting in warm water for 15 mins).", tfa: "வெதுவெதுப்பான நீரில் 15 நிமிடம் அமர்தல்.",
+        dt: "High fiber (Papaya, Greens), plenty of water.", tdt: "அதிக நார்ச்சத்து (பப்பாளி, கீரை).",
+        rem: "Aloe vera gel, drinking buttermilk.", trem: "கற்றாழை, மோர் குடித்தல்.",
+        pre: "Avoid constipation, don't strain during stools.", tpre: "மலச்சிக்கலைத் தவிர்க்கவும்.",
+        adv: "Increase physical activity to improve digestion.", tadv: "செரிமானம் சீராக உடற்பயிற்சி செய்யவும்.",
+        dan: "Severe rectal bleeding, dizziness due to blood loss.", tdan: "மலத்தில் அதிக இரத்தம், மயக்கம்.",
+        sh: "If pain is unbearable or bleeding is heavy.", tsh: "வலி தாங்க முடியாவிட்டாலோ இரத்தம் அதிகமிருந்தாலோ.",
+        sp: "Proctologist / General Surgeon"
+    },
+    {
+        n: "Insomnia", t: "தூக்கமின்மை",
+        s: "Difficulty falling asleep, waking up early, day fatigue.",
+        ts: "தூங்குவதில் சிரமம், அதிகாலை விழிப்பு, பகல் சோர்வு.",
+        dur: "Varies (Days to Months).", td: "நாட்கள் முதல் மாதங்கள்.",
+        fa: "Turn off screens 1 hour before bed.", tfa: "தூங்குவதற்கு 1 மணிநேரம் முன் மொபைல் தவிர்க்கவும்.",
+        dt: "Warm milk, almonds, avoid caffeine at night.", tdt: "சூடான பால், பாதாம், இரவு காபி தவிர்க்கவும்.",
+        rem: "Reading a book, calming music, lavender oil.", trem: "புத்தகம் வாசித்தல், அமைதியான இசை.",
+        pre: "Fix sleep time, no naps during day.", tpre: "சரியான உறக்க நேரம், பகல் தூக்கம் தவிர்த்தல்.",
+        adv: "Avoid checking clock frequently at night.", tadv: "இரவில் அடிக்கடி கடிகாரத்தைப் பார்க்க வேண்டாம்.",
+        dan: "Hallucinations, extreme cognitive decline.", tdan: "பிரமைகள், அதிக மனக்குழப்பம்.",
+        sh: "If lack of sleep affects job or driving safety.", tsh: "தூக்கமின்மை அன்றாட வாழ்வைப் பாதித்தால்.",
+        sp: "Sleep Specialist / Psychiatrist"
+    },
+    {
+        n: "Conjunctivitis", t: "மெட்ராஸ் ஐ",
+        s: "Red eyes, itching, watery/pus discharge, sticky lids.",
+        ts: "சிவப்பு கண்கள், அரிப்பு, கண்ணீர் வடிதல்.",
+        dur: "3-7 Days.", td: "3-7 நாட்கள்.",
+        fa: "Wash eyes with cool water, use separate towel.", tfa: "குளிர்ந்த நீரால் கழுவவும், தனித் துண்டு பயன்படுத்தவும்.",
+        dt: "Vitamin A rich (Carrot, Papaya), spinach.", tdt: "வைட்டமின் ஏ உணவுகள் (கேரட், பப்பாளி).",
+        rem: "Cold compress over eyes.", trem: "கண்களில் குளிர்ந்த ஒத்தடம்.",
+        pre: "Don't touch eyes, wash hands frequently.", tpre: "கண்களைத் தொட வேண்டாம், கை கழுவவும்.",
+        adv: "Avoid wearing contact lenses till cured.", tadv: "குணமாகும் வரை லென்ஸ் அணிய வேண்டாம்.",
+        dan: "Severe eye pain, light sensitivity, vision loss.", tdan: "கடும் கண் வலி, பார்வை மங்குதல்.",
+        sh: "If vision becomes blurry or pain is severe.", tsh: "பார்வை மங்கினாலோ வலி அதிகமிருந்தாலோ அணுகவும்.",
+        sp: "Ophthalmologist"
+    },
+    {
+        n: "PCOS", t: "கருப்பை நீர்க்கட்டி",
+        s: "Irregular periods, weight gain, acne, facial hair.",
+        ts: "ஒழுங்கற்ற மாதவிடாய், எடை கூடுதல், முகப்பரு.",
+        dur: "Chronic (Management).", td: "நீண்ட கால பராமரிப்பு.",
+        fa: "Maintain a period tracking diary.", tfa: "மாதவிடாய் தேதிகளை குறித்து வைக்கவும்.",
+        dt: "Low sugar, high protein, soy products, greens.", tdt: "குறைந்த சர்க்கரை, அதிக புரதம், கீரைகள்.",
+        rem: "Spearmint tea, cinnamon, regular yoga.", trem: "இலவங்கப்பட்டை, யோகா.",
+        pre: "Maintain healthy BMI, reduce processed food.", tpre: "உடல் எடையைச் சீராக வைத்தல்.",
+        adv: "Lifestyle change is the best medicine for PCOS.", tadv: "வாழ்க்கை முறை மாற்றமே சிறந்த மருந்து.",
+        dan: "Sudden sharp pelvic pain, heavy prolonged bleeding.", tdan: "திடீர் கடும் வயிற்று வலி, அதிக இரத்தப்போக்கு.",
+        sh: "If periods are missed for more than 3 months.", tsh: "3 மாதங்களுக்கு மேல் மாதவிடாய் தள்ளிப்போனால்.",
+        sp: "Gynecologist"
+    },
+    {
+        n: "Tension Headache", t: "மன அழுத்த தலைவலி",
+        s: "Constant ache on both sides, pressure behind eyes, neck muscle tightness.",
+        ts: "தலையின் இருபுறமும் வலி, கண்களுக்குப் பின் அழுத்தம், கழுத்து தசை பிடிப்பு.",
+        dur: "30 Mins to Few Days.", td: "30 நிமிடம் முதல் சில நாட்கள்.",
+        fa: "Rest, drink water, massage temples gently.", tfa: "ஓய்வு எடுக்கவும், தண்ணீர் குடிக்கவும், மசாஜ் செய்யவும்.",
+        dt: "Magnesium rich foods, avoid skipping meals.", tdt: "மெக்னீசியம் உணவுகள், உணவைத் தவிர்க்க வேண்டாம்.",
+        rem: "Peppermint oil, warm shower, deep breathing.", trem: "புதினா ஆயில், வெதுவெதுப்பான குளியல், தியானம்.",
+        pre: "Manage stress, correct sitting posture, enough sleep.", tpre: "மன அழுத்தம் குறைத்தல், சரியான அமரும் நிலை.",
+        adv: "Avoid excessive screen time and eye strain.", tadv: "அதிக நேரம் செல்போன்/டிவி பார்ப்பதைத் தவிர்க்கவும்.",
+        dan: "Sudden extreme pain, fever with stiff neck.", tdan: "திடீர் கடும் வலி, கழுத்து பிடிப்புடன் காய்ச்சல்.",
+        sh: "If headache starts after a head injury.", tsh: "தலையில் அடிபட்ட பின் வலி ஏற்பட்டால் உடனே அணுகவும்.",
+        sp: "General Physician / Neurologist"
+    },
+    {
+        n: "Sinus Headache", t: "சைனஸ் தலைவலி",
+        s: "Pain in cheekbones, forehead, or bridge of nose, stuffy nose.",
+        ts: "கன்னம், நெற்றி பகுதியில் வலி, மூக்கடைப்பு.",
+        dur: "Up to 2 Weeks (with infection).", td: "2 வாரங்கள் வரை.",
+        fa: "Steam inhalation, saline nasal spray.", tfa: "ஆவி பிடித்தல், மூக்கில் உப்பு நீர் சொட்டு மருந்து.",
+        dt: "Spicy foods (helps drainage), warm fluids, ginger.", tdt: "காரமான உணவு, சூடான திரவங்கள், இஞ்சி.",
+        rem: "Warm compress on painful areas, turmeric milk.", trem: "வலி உள்ள இடத்தில் வெதுவெதுப்பான ஒத்தடம், மஞ்சள் பால்.",
+        pre: "Avoid allergens (dust, pollen), stay hydrated.", tpre: "தூசி, ஒவ்வாமை தவிர்க்கவும், அதிக நீர் குடிக்கவும்.",
+        adv: "Treat the underlying cold or allergy first.", tadv: "முதலில் சளி அல்லது அலர்ஜிக்கு சிகிச்சை எடுக்கவும்.",
+        dan: "Swelling around eyes, high fever, yellow/green mucus.", tdan: "கண் வீக்கம், அதிக காய்ச்சல், சீழ் போன்ற சளி.",
+        sh: "If symptoms don't improve with OTC medicines.", tsh: "மருந்து எடுத்தும் முன்னேற்றம் இல்லை எனில் அணுகவும்.",
+        sp: "ENT Specialist"
+    },
+    {
+        n: "Cluster Headache", t: "கொத்து தலைவலி (தீவிர வலி)",
+        s: "Intense burning pain around one eye, eye watering, restlessness.",
+        ts: "ஒரு கண்ணைச் சுற்றி கடும் எரிச்சல் வலி, கண்ணீர் வடிதல்.",
+        dur: "15 Mins to 3 Hours (occurs in cycles).", td: "15 நிமிடம் முதல் 3 மணிநேரம்.",
+        fa: "Consult doctor for oxygen therapy or specific meds.", tfa: "மருத்துவர் ஆலோசனைப்படி ஆக்சிஜன் அல்லது மருந்து எடுத்தல்.",
+        dt: "Avoid alcohol and smoking triggers.", tdt: "மது மற்றும் புகைப்பிடித்தலை முற்றிலும் தவிர்க்கவும்.",
+        rem: "Maintaining a cool environment, breathing exercise.", trem: "குளிர்ச்சியான சூழல், சுவாசப் பயிற்சி.",
+        pre: "Avoid strong smelling substances and tobacco.", tpre: "வாசனை திரவியங்கள் மற்றும் புகையிலையைத் தவிர்க்கவும்.",
+        adv: "Follow strict medication schedule provided by neurologist.", tadv: "நரம்பியல் மருத்துவர் கூறும் மருந்துகளைத் தவறாமல் எடுக்கவும்.",
+        dan: "Drooping eyelid, pinpoint pupil, extreme agitation.", tdan: "கண் இமை தொங்குதல், மிகுந்த படபடப்பு.",
+        sh: "If the pattern of headache changes suddenly.", tsh: "தலைவலி வரும் முறை திடீரென மாறினால் அணுகவும்.",
+        sp: "Neurologist"
+    },
+    {
+        n: "Blood Pressure (Low)", t: "குறைந்த இரத்த அழுத்தம்",
+        s: "Dizziness, blurred vision, fainting, cold skin.",
+        ts: "மயக்கம், மங்கலான பார்வை, குளிர்ந்த தோல்.",
+        dur: "Varies.", td: "மாறுபடும்.",
+        fa: "Drink salt water or ORS, lie down with legs raised.", tfa: "உப்பு நீர் குடிக்கவும், கால்களை உயர்த்தி வைத்து படுக்கவும்.",
+        dt: "Increase salt intake, olives, cottage cheese, licorice tea.", tdt: "உப்பு, சீஸ், அதிக நீர்ச்சத்து உணவுகள்.",
+        rem: "Soaked almonds, basil leaves (Tulsi) juice.", trem: "ஊறவைத்த பாதாம், துளசி சாறு.",
+        pre: "Avoid sudden standing, drink plenty of fluids.", tpre: "திடீரென எழுந்து நிற்பதைத் தவிர்க்கவும்.",
+        adv: "Check for underlying heart or thyroid issues.", tadv: "இதயம் அல்லது தைராய்டு பிரச்சனையை பரிசோதிக்கவும்.",
+        dan: "Extreme confusion, rapid shallow breathing, weak pulse.", tdan: "மிகுந்த குழப்பம், பலவீனமான நாடித்துடிப்பு.",
+        sh: "If the person faints frequently.", tsh: "அடிக்கடி மயக்கம் ஏற்பட்டால் அணுகவும்.",
+        sp: "Cardiologist"
+    },
+    {
+        n: "Astigmatism", t: "பார்வைக் குறைபாடு (சிதறல் பார்வை)",
+        s: "Blurred vision, eye strain, squinting, headaches.",
+        ts: "மங்கலான பார்வை, கண் சோர்வு, தலைவலி.",
+        dur: "Permanent (Correctable).", td: "நிரந்தரம் (சரிசெய்யக்கூடியது).",
+        fa: "Rest eyes from screens immediately.", tfa: "திரைகளைப் பார்ப்பதைக் குறைக்கவும்.",
+        dt: "Carrots, leafy greens, fish rich in Omega-3.", tdt: "கேரட், கீரை, மீன் வகைகள்.",
+        rem: "Eye exercises (Palming, focusing far and near).", trem: "கண் பயிற்சிகள் செய்தல்.",
+        pre: "Regular eye checkups, adequate lighting while reading.", tpre: "சரியான வெளிச்சத்தில் வாசிக்கவும்.",
+        adv: "Wear prescribed glasses or contact lenses regularly.", tadv: "மருத்துவர் பரிந்துரைத்த கண்ணாடியை அணியவும்.",
+        dan: "Sudden loss of vision or severe eye pain.", tdan: "திடீர் பார்வை இழப்பு அல்லது கடும் கண் வலி.",
+        sh: "If vision affects daily activities like driving.", tsh: "பார்வை அன்றாட வேலையைப் பாதித்தால் அணுகவும்.",
+        sp: "Ophthalmologist"
+    },
+    {
+        n: "Bronchitis", t: "சுவாசக்குழாய் அழற்சி",
+        s: "Cough with mucus, shortness of breath, mild fever.",
+        ts: "சளியுடன் இருமல், மூச்சுத் திணறல், லேசான காய்ச்சல்.",
+        dur: "10-14 Days.", td: "10-14 நாட்கள்.",
+        fa: "Inhale steam, stay in a warm environment.", tfa: "ஆவி பிடித்தல், கதகதப்பான சூழலில் இருத்தல்.",
+        dt: "Warm fluids, honey-lemon water, ginger soup.", tdt: "சூடான திரவங்கள், இஞ்சி சூப்.",
+        rem: "Gargle with salt water, turmeric in warm milk.", trem: "உப்பு நீர் கொப்பளித்தல், மஞ்சள் பால்.",
+        pre: "Avoid smoking, stay away from air pollution.", tpre: "புகைப்பிடித்தல் மற்றும் காற்று மாசுபாட்டைத் தவிர்க்கவும்.",
+        adv: "Use a humidifier to loosen chest mucus.", tadv: "ஹுமிடிபையர் பயன்படுத்துவது நல்லது.",
+        dan: "High fever >102F, coughing up blood, wheezing.", tdan: "அதிக காய்ச்சல், இருமலில் இரத்தம் வருதல்.",
+        sh: "If cough lasts more than 3 weeks.", tsh: "3 வாரங்களுக்கு மேல் இருமல் இருந்தால் அணுகவும்.",
+        sp: "Pulmonologist"
+    },
+    {
+        n: "Dermatitis", t: "தோல் அழற்சி / அலர்ஜி",
+        s: "Red rash, itching, dry cracked skin, blisters.",
+        ts: "சிவப்பு தடிப்பு, அரிப்பு, உலர்ந்த தோல்.",
+        dur: "Varies (Days to Weeks).", td: "நாட்கள் முதல் வாரங்கள்.",
+        fa: "Apply cool compress, avoid scratching.", tfa: "குளிர்ந்த ஒத்தடம், சொறிய வேண்டாம்.",
+        dt: "Probiotics (Curd), Vitamin E foods, avoid sugar.", tdt: "தயிர், வைட்டமின் ஈ உணவுகள்.",
+        rem: "Coconut oil application, Oatmeal bath.", trem: "தேங்காய் எண்ணெய் தடவுதல்.",
+        pre: "Identify allergens, use fragrance-free soap.", tpre: "வாசனை இல்லாத சோப் பயன்படுத்தவும்.",
+        adv: "Keep skin moisturized throughout the day.", tadv: "தோலை எப்போதும் ஈரப்பதமாக வைத்திருக்கவும்.",
+        dan: "Skin looks yellow/oozing pus, severe pain.", tdan: "தோலில் சீழ் வடிதல் அல்லது கடும் வலி.",
+        sh: "If the rash spreads rapidly or affects sleep.", tsh: "தடிப்பு வேகமாக பரவினால் உடனே அணுகவும்.",
+        sp: "Dermatologist"
+    },
+    {
+        n: "Epilepsy", t: "வலிப்பு நோய் (காக்காய் வலிப்பு)",
+        s: "Temporary confusion, staring spells, uncontrollable jerking.",
+        ts: "திடீர் குழப்பம், உடல் நடுக்கம், மயக்கம்.",
+        dur: "Chronic (Management).", td: "நீண்ட கால பராமரிப்பு.",
+        fa: "Ease person to floor, turn them on their side.", tfa: "தரையில் படுக்க வைத்து, ஒருபுறம் சாய்க்கவும்.",
+        dt: "Ketogenic diet (High fat, low carb) under supervision.", tdt: "அதிக கொழுப்புள்ள உணவு (மருத்துவர் அறிவுரைப்படி).",
+        rem: "Ensure 8-9 hours of regular sleep, manage stress.", trem: "சரியான உறக்கம், மன அழுத்தம் குறைத்தல்.",
+        pre: "Strict adherence to anti-seizure medication.", tpre: "வலிப்பு மருந்துகளைத் தவறாமல் எடுத்தல்.",
+        adv: "Do not put anything in the person's mouth during a fit.", tadv: "வலிப்பு வரும்போது வாயில் எதையும் வைக்க வேண்டாம்.",
+        dan: "Seizure lasts >5 mins, person doesn't wake up.", tdan: "வலிப்பு 5 நிமிடங்களுக்கு மேல் நீடித்தால்.",
+        sh: "If it's the person's first seizure ever.", tsh: "முதல் முறை வலிப்பு ஏற்பட்டால் உடனே செல்லவும்.",
+        sp: "Neurologist"
+    },
+    {
+        n: "Food Poisoning", t: "உணவு நச்சு",
+        s: "Nausea, vomiting, watery diarrhea, abdominal cramps.",
+        ts: "வாந்தி, வயிற்றுப்போக்கு, வயிற்று வலி.",
+        dur: "1-3 Days.", td: "1-3 நாட்கள்.",
+        fa: "Sip small amounts of water or ORS, rest.", tfa: "சிறிது சிறிதாக நீர் அல்லது ORS குடிக்கவும்.",
+        dt: "BRAT diet (Banana, Rice, Applesauce, Toast).", tdt: "வாழைப்பழம், சாதம், பிரட்.",
+        rem: "Ginger water, lemon juice with honey.", trem: "இஞ்சி நீர், தேன் கலந்த எலுமிச்சை சாறு.",
+        pre: "Wash hands, cook meat thoroughly, check expiry.", tpre: "கை கழுவுதல், உணவைச் சரியாக வேகவைத்தல்.",
+        adv: "Avoid dairy and spicy food for 2 days.", tadv: "2 நாட்களுக்கு பால் மற்றும் காரம் தவிர்க்கவும்.",
+        dan: "Inability to keep liquids down, bloody vomit/stool.", tdan: "வாந்தி அல்லது மலத்தில் இரத்தம்.",
+        sh: "Extreme thirst, dry mouth, no urine.", tsh: "அதிக தாகம் மற்றும் சிறுநீர் கழிக்க முடியாமை.",
+        sp: "General Physician"
+    },
+    {
+        n: "Gout", t: "கௌட் (யூரிக் அமில மூட்டு வலி)",
+        s: "Intense joint pain (often big toe), redness, swelling.",
+        ts: "கடும் மூட்டு வலி (முக்கியமாக கால் பெருவிரல்).",
+        dur: "5-10 Days.", td: "5-10 நாட்கள்.",
+        fa: "Elevate the limb, apply ice to the joint.", tfa: "பாதிக்கப்பட்ட காலை உயர்த்தி வைக்கவும், ஐஸ் ஒத்தடம்.",
+        dt: "Low purine diet: avoid red meat, seafood, sugar.", tdt: "அசைவம் மற்றும் சர்க்கரை தவிர்க்கவும்.",
+        rem: "Drink cherry juice, stay hydrated.", trem: "செர்ரி பழச்சாறு, அதிக நீர்.",
+        pre: "Maintain healthy weight, limit alcohol.", tpre: "உடல் எடை குறைத்தல், மதுவைத் தவிர்த்தல்.",
+        adv: "Check uric acid levels in blood.", tadv: "யூரிக் அமில அளவைப் பரிசோதிக்கவும்.",
+        dan: "High fever with joint pain (sign of infection).", tdan: "வலியுடன் கூடிய காய்ச்சல்.",
+        sh: "If pain makes walking impossible.", tsh: "நடக்க முடியாத அளவு வலி இருந்தால்.",
+        sp: "Rheumatologist"
+    },
+    {
+        n: "Insomnia", t: "தூக்கமின்மை",
+        s: "Difficulty falling asleep, waking up in night, daytime fatigue.",
+        ts: "தூங்குவதில் சிரமம், பகல் சோர்வு.",
+        dur: "Short or Long term.", td: "மாறுபடும்.",
+        fa: "Stop using phone/laptop 1 hour before bed.", tfa: "தூங்கும் முன் மொபைல் பார்ப்பதைத் தவிர்க்கவும்.",
+        dt: "Almonds, warm milk, avoid caffeine after 4 PM.", tdt: "பாதாம், சூடான பால்.",
+        rem: "Meditation, reading a book, lavender oil scent.", trem: "தியானம், புத்தக வாசிப்பு.",
+        pre: "Maintain a strict sleep schedule, exercise daily.", tpre: "சரியான உறக்க நேரத்தைப் பின்பற்றவும்.",
+        adv: "Don't take sleeping pills without a doctor's prescription.", tadv: "தூக்க மாத்திரைகளை சுயமாக எடுக்க வேண்டாம்.",
+        dan: "Severe anxiety, hallucinations, memory loss.", tdan: "அதிக கவலை, மறதி.",
+        sh: "If lack of sleep impacts daily safety (driving).", tsh: "தூக்கமின்மை அன்றாட வாழ்வைப் பாதித்தால்.",
+        sp: "Psychiatrist / Sleep Specialist"
+    },
+    {
+        n: "Laryngitis", t: "தொண்டை அழற்சி (குரல் மாற்றம்)",
+        s: "Hoarseness, weak voice, sore throat, tickling in throat.",
+        ts: "கரகரப்பான குரல், குரல் இழப்பு, தொண்டை வலி.",
+        dur: "3-7 Days.", td: "3-7 நாட்கள்.",
+        fa: "Complete vocal rest (don't even whisper).", tfa: "பேசாமல் ஓய்வு எடுக்கவும்.",
+        dt: "Slippery elm tea, warm soups, stay hydrated.", tdt: "மூலிகை டீ, சூடான சூப்.",
+        rem: "Gargle with warm salt water, steam inhalation.", trem: "உப்பு நீர் கொப்பளித்தல், ஆவி பிடித்தல்.",
+        pre: "Avoid smoking, limit caffeine and alcohol.", tpre: "புகைப்பிடித்தல் மற்றும் காபி தவிர்த்தல்.",
+        adv: "Suck on throat lozenges to keep throat moist.", tadv: "தொண்டையை உலர விடாமல் பார்த்துக் கொள்ளவும்.",
+        dan: "Trouble breathing, coughing up blood.", tdan: "மூச்சுத் திணறல், இருமலில் இரத்தம்.",
+        sh: "If voice doesn't return after 2 weeks.", tsh: "2 வாரங்களுக்கு மேல் குரல் மாறாவிட்டால்.",
+        sp: "ENT Specialist"
+    },
+    {
+        n: "Mumps", t: "பொன்னுக்கு வீங்கி",
+        s: "Swollen painful salivary glands (cheeks), fever, headache.",
+        ts: "கன்ன வீக்கம், காய்ச்சல், தலைவலி.",
+        dur: "7-10 Days.", td: "7-10 நாட்கள்.",
+        fa: "Apply warm or cold compress to the swollen area.", tfa: "வீக்கத்திற்கு ஒத்தடம் கொடுக்கவும்.",
+        dt: "Soft diet (Mashed potato, porridge), avoid acidic juice.", tdt: "மென்மையான உணவு, புளிப்பான சாறு தவிர்க்கவும்.",
+        rem: "Salt water gargle, plenty of rest.", trem: "உப்பு நீர் கொப்பளித்தல், முழு ஓய்வு.",
+        pre: "MMR Vaccine (very effective).", tpre: "எம்.எம்.ஆர் (MMR) தடுப்பூசி.",
+        adv: "Isolate the patient to prevent spreading.", tadv: "நோயாளியைத் தனிமைப்படுத்தவும்.",
+        dan: "Severe headache, stiff neck, painful testicles.", tdan: "கடும் தலைவலி, கழுத்து பிடிப்பு.",
+        sh: "If swelling doesn't go down or fever is high.", tsh: "வீக்கம் குறையவில்லை என்றால் அணுகவும்.",
+        sp: "Pediatrician / GP"
+    },
+    {
+        n: "Osteoporosis", t: "எலும்பு தேய்மானம்",
+        s: "Back pain, loss of height over time, easily broken bones.",
+        ts: "முதுகு வலி, எலும்பு முறிவு ஏற்படுதல்.",
+        dur: "Chronic.", td: "நீண்ட கால பாதிப்பு.",
+        fa: "Prevent falls using walking aids if needed.", tfa: "விழுவதைத் தவிர்க்க ஊன்றுகோல் பயன்படுத்தவும்.",
+        dt: "Calcium rich (Milk, Ragi), Vitamin D, greens.", tdt: "பால், ராகி, கீரை, வைட்டமின் டி.",
+        rem: "Regular weight-bearing exercises (Walking).", trem: "நடைப்பயிற்சி மேற்கொள்ளுதல்.",
+        pre: "Stop smoking, limit alcohol, exercise early in life.", tpre: "புகைப்பிடித்தல் தவிர்த்தல், உடற்பயிற்சி.",
+        adv: "Check BMD (Bone Mineral Density) test.", tadv: "எலும்பு அடர்த்திப் பரிசோதனை செய்யவும்.",
+        dan: "Sudden severe back pain (spinal fracture).", tdan: "திடீர் கடும் முதுகு வலி.",
+        sh: "If a minor bump causes a bone fracture.", tsh: "சிறு அடியில் எலும்பு முறிவு ஏற்பட்டால் அணுகவும்.",
+        sp: "Orthopedic Surgeon"
+    },
+    {
+        n: "Peptic Ulcer", t: "வயிற்றுப் புண்",
+        s: "Burning stomach pain, feeling full/bloated, heartburn.",
+        ts: "வயிற்று எரிச்சல், உப்பசம், நெஞ்செரிச்சல்.",
+        dur: "Weeks to Months.", td: "வாரங்கள் முதல் மாதங்கள்.",
+        fa: "Avoid NSAID pain relievers (like Ibuprofen).", tfa: "வலி நிவாரணி மாத்திரைகளை சுயமாக எடுக்க வேண்டாம்.",
+        dt: "Fiber-rich food, avoid spicy/acidic foods.", tdt: "நார்ப்பொருள் உணவு, காரம் தவிர்த்தல்.",
+        rem: "Cabbage juice, honey, cold milk.", trem: "முட்டைக்கோஸ் சாறு, தேன், குளிர்ந்த பால்.",
+        pre: "Don't smoke, limit alcohol, manage stress.", tpre: "மது மற்றும் புகைப்பிடித்தலைத் தவிர்க்கவும்.",
+        adv: "Check for H. pylori infection with a doctor.", tadv: "வயிற்று கிருமி பரிசோதனை செய்யவும்.",
+        dan: "Vomiting blood, black tarry stools.", tdan: "வாந்தியில் இரத்தம், கருப்பு மலம்.",
+        sh: "If pain is severe and occurs on an empty stomach.", tsh: "வெறும் வயிற்றில் கடும் வலி இருந்தால் அணுகவும்.",
+        sp: "Gastroenterologist"
+    },
+    {
+        n: "Psoriasis", t: "சொரியாசிஸ் (தோல் செதில் நோய்)",
+        s: "Red patches of skin covered with silvery scales.",
+        ts: "தோலில் செதில் போன்ற தடிப்புகள்.",
+        dur: "Chronic.", td: "நீண்ட கால பாதிப்பு.",
+        fa: "Apply thick moisturizer to prevent cracking.", tfa: "ஈரப்பத மூட்டும் லோஷன் தடவவும்.",
+        dt: "Anti-inflammatory diet (Turmeric, Salmon, Greens).", tdt: "மஞ்சள், கீரை, மீன் உணவுகள்.",
+        rem: "Warm oatmeal bath, sun exposure (limited).", trem: "வெதுவெதுப்பான குளியல், லேசான வெயில்.",
+        pre: "Manage stress, avoid skin injuries/cuts.", tpre: "மன அழுத்தம் குறைத்தல், காயம் தவிர்க்கவும்.",
+        adv: "Avoid harsh soaps and perfumes on the skin.", tadv: "தோலில் ரசாயன சோப்புகளைத் தவிர்க்கவும்.",
+        dan: "Joint pain along with skin rashes (Psoriatic arthritis).", tdan: "தோல் தடிப்புடன் மூட்டு வலி.",
+        sh: "If the rash covers a large area of the body.", tsh: "உடல் முழுவதும் தடிப்பு பரவினால் அணுகவும்.",
+        sp: "Dermatologist"
+    },
+    {
+        n: "Ringworm", t: "படர்தாமரை",
+        s: "Circular red itchy rash, scaly ring shape.",
+        ts: "வட்ட வடிவ சிவப்பு அரிப்பு, தடிப்பு.",
+        dur: "2-4 Weeks.", td: "2-4 வாரங்கள்.",
+        fa: "Keep the area clean and dry, don't scratch.", tfa: "பகுதியைச் சுத்தமாகவும் உலர்ந்தும் வைத்திருக்கவும்.",
+        dt: "Garlic, oregano, avoid excess sugar.", tdt: "பூண்டு, சர்க்கரை குறைத்தல்.",
+        rem: "Apply tea tree oil or coconut oil.", trem: "தேயிலை எண்ணெய் அல்லது தேங்காய் எண்ணெய்.",
+        pre: "Don't share towels or clothes, keep skin dry.", tpre: "துணிகளைப் பகிர வேண்டாம், தோலை உலர வைக்கவும்.",
+        adv: "Use antifungal cream as prescribed for the full course.", tadv: "பூஞ்சை எதிர்ப்பு களிம்புகளைத் தொடர்ந்து தடவவும்.",
+        dan: "Blisters or pus in the infected area.", tdan: "சீழ் அல்லது கொப்புளங்கள் ஏற்படுதல்.",
+        sh: "If the infection doesn't clear with creams.", tsh: "களிம்பு தடவியும் சரியாகவில்லை எனில் அணுகவும்.",
+        sp: "Dermatologist"
+    },
+    {
+        n: "Sciatica", t: "சையாட்டிகா (நரம்பு வலி)",
+        s: "Pain radiating from lower back down the leg.",
+        ts: "இடுப்பிலிருந்து கால் வரை பரவும் நரம்பு வலி.",
+        dur: "4-6 Weeks.", td: "4-6 வாரங்கள்.",
+        fa: "Apply ice packs for 20 mins several times a day.", tfa: "ஐஸ் ஒத்தடம் 20 நிமிடம் கொடுக்கவும்.",
+        dt: "B-vitamin rich foods, anti-inflammatory herbs.", tdt: "வைட்டமின் பி உணவுகள்.",
+        rem: "Light stretching, yoga, avoiding heavy lifting.", trem: "லேசான உடற்பயிற்சி, யோகா.",
+        pre: "Maintain good posture, exercise lower back muscles.", tpre: "சரியான அமரும் நிலை, இடுப்புப் பயிற்சி.",
+        adv: "Avoid sitting for long hours at a time.", tadv: "ஒரே இடத்தில் நீண்ட நேரம் உட்கார வேண்டாம்.",
+        dan: "Numbness in leg, loss of bladder control.", tdan: "கால் மரத்துப் போதல், சிறுநீர்க் கட்டுப்பாடு இழப்பு.",
+        sh: "If pain follows a back injury or is sudden and severe.", tsh: "அடிபட்ட பின் வலி ஏற்பட்டால் உடனே அணுகவும்.",
+        sp: "Neurologist / Orthopedic Surgeon"
+    },
+    {
+        n: "Sinusitis", t: "சைனஸ் (மூக்கடைப்பு/தலைவலி)",
+        s: "Thick yellow mucus, headache, nasal congestion.",
+        ts: "சளி, தலைவலி, மூக்கடைப்பு.",
+        dur: "10-21 Days.", td: "10-21 நாட்கள்.",
+        fa: "Use saline nasal spray, drink hot water.", tfa: "உப்பு நீர் மூக்கு ஸ்ப்ரே, சூடான நீர்.",
+        dt: "Spicy food (to clear mucus), ginger, turmeric.", tdt: "காரமான உணவு, இஞ்சி, மஞ்சள்.",
+        rem: "Steam inhalation, warm compress on face.", trem: "ஆவி பிடித்தல், முகத்தில் ஒத்தடம்.",
+        pre: "Avoid allergy triggers like dust and smoke.", tpre: "தூசி, புகை தவிர்க்கவும்.",
+        adv: "Keep your house well-ventilated and dust-free.", tadv: "வீட்டைச் சுத்தமாகவும் காற்றோட்டமாகவும் வைக்கவும்.",
+        dan: "High fever, swelling around eyes, severe headache.", tdan: "அதிக காய்ச்சல், கண் வீக்கம்.",
+        sh: "If sinus pain lasts more than 10 days.", tsh: "10 நாட்களுக்கு மேல் வலி இருந்தால் அணுகவும்.",
+        sp: "ENT Specialist"
+    },
+    {
+        n: "Stroke", t: "பக்கவாதம்",
+        s: "Facial drooping, arm weakness, speech difficulty.",
+        ts: "முகம் கோணுதல், கை பலவீனம், பேச்சு குழறல்.",
+        dur: "Emergency/Long term recovery.", td: "அவசர சிகிச்சை தேவை.",
+        fa: "Call 108 immediately. Check the time symptoms started.", tfa: "உடனே 108-ஐ அழைக்கவும். நேரம் முக்கியம்.",
+        dt: "Low salt, heart-healthy diet (Oats, Berries).", tdt: "குறைந்த உப்பு, இதய ஆரோக்கிய உணவுகள்.",
+        rem: "Physiotherapy and speech therapy post-emergency.", trem: "பிசியோதெரபி மற்றும் பேச்சுப் பயிற்சி.",
+        pre: "Control BP and Sugar, quit smoking, exercise.", tpre: "பிபி மற்றும் சர்க்கரையைக் கட்டுப்பாட்டில் வைக்கவும்.",
+        adv: "Every minute counts; do not wait for symptoms to pass.", tadv: "ஒவ்வொரு நிமிடமும் முக்கியம், தாமதிக்க வேண்டாம்.",
+        dan: "Sudden loss of balance, severe 'thunderclap' headache.", tdan: "சமநிலை இழப்பு, கடும் தலைவலி.",
+        sh: "Sudden numbness or confusion - Seek ER immediately.", tsh: "திடீர் மரப்பு அல்லது குழப்பம் - உடனே மருத்துவமனை செல்லவும்.",
+        sp: "Neurologist"
+    },
+    {
+        n: "Tonsillitis", t: "தொண்டைச்சதை அழற்சி",
+        s: "Swollen tonsils, sore throat, difficulty swallowing.",
+        ts: "தொண்டை வீக்கம், வலி, விழுங்குவதில் சிரமம்.",
+        dur: "3-7 Days.", td: "3-7 நாட்கள்.",
+        fa: "Gargle with warm salt water, rest the voice.", tfa: "உப்பு நீர் கொப்பளித்தல், ஓய்வு.",
+        dt: "Cold foods (Ice cream for relief), warm soup, jelly.", tdt: "குளிர்ச்சியான அல்லது இதமான உணவுகள்.",
+        rem: "Honey and lemon water, ginger tea.", trem: "தேன் எலுமிச்சை நீர், இஞ்சி டீ.",
+        pre: "Wash hands, don't share toothbrushes.", tpre: "கை கழுவுதல், பிரஷ் பகிர வேண்டாம்.",
+        adv: "Avoid spicy and crunchy foods while throat is sore.", tadv: "தொண்டை வலியின் போது மொறுமொறுப்பான உணவைத் தவிர்க்கவும்.",
+        dan: "Drooling because of inability to swallow.", tdan: "எச்சில் விழுங்க முடியாத நிலை.",
+        sh: "If the throat is so swollen that breathing is hard.", tsh: "சுவாசிக்கச் சிரமப்பட்டால் உடனே அணுகவும்.",
+        sp: "ENT Specialist"
+    },
+    {
+        n: "Vertigo", t: "தலைச்சுற்றல்",
+        s: "Sensation of spinning, loss of balance, nausea.",
+        ts: "தலை சுற்றுதல், நிலை தடுமாற்றம், வாந்தி உணர்வு.",
+        dur: "Seconds to Hours.", td: "நாட்கள்/மணிநேரம்.",
+        fa: "Lie down in a quiet, dark room immediately.", tfa: "அமைதியான இருட்டு அறையில் படுக்கவும்.",
+        dt: "Low salt, avoid caffeine, stay hydrated.", tdt: "உப்பு, காபி தவிர்க்கவும்.",
+        rem: "Epley maneuver (head exercises), ginger.", trem: "தலைப் பயிற்சி (Epley), இஞ்சி.",
+        pre: "Avoid sudden head movements, control BP.", tpre: "தலையைத் திடீரெனத் திருப்புவதைத் தவிர்க்கவும்.",
+        adv: "Get your inner ear or neck checked by a doctor.", tadv: "காது அல்லது கழுத்துப் பகுதியை பரிசோதிக்கவும்.",
+        dan: "Double vision, weakness in limbs, fainting.", tdan: "இரட்டைப் பார்வை, உடல் பலவீனம்.",
+        sh: "If vertigo occurs with a severe headache or fever.", tsh: "தலைவலியுடன் கூடிய தலைச்சுற்றல் இருந்தால்.",
+        sp: "ENT Specialist / Neurologist"
+    },
+    {
+        n: "Kidney Infection", t: "சிறுநீரகத் தொற்று",
+        s: "Fever, side/back pain, frequent painful urination.",
+        ts: "காய்ச்சல், இடுப்பு வலி, அடிக்கடி சிறுநீர் கழித்தல்.",
+        dur: "1-2 Weeks.", td: "1-2 வாரங்கள்.",
+        fa: "Drink plenty of water to flush out bacteria.", tfa: "அதிக நீர் குடிக்கவும்.",
+        dt: "Cranberry juice, clear soups, plain rice.", tdt: "கிரான்பெர்ரி சாறு, கஞ்சி.",
+        rem: "Applying a heating pad to the back for pain.", trem: "முதுகு வலிக்கு வெப்ப ஒத்தடம்.",
+        pre: "Drink water daily, urinate when needed (don't hold).", tpre: "சிறுநீரை அடக்க வேண்டாம்.",
+        adv: "Antibiotics are necessary to prevent kidney damage.", tadv: "சிகிச்சை எடுக்காவிடில் சிறுநீரகம் பாதிக்கப்படும்.",
+        dan: "Persistent high fever, severe vomiting, bloody urine.", tdan: "தொடர் காய்ச்சல், சிறுநீரில் இரத்தம்.",
+        sh: "If you have UTI symptoms along with back pain.", tsh: "முதுகு வலியுடன் சிறுநீர் தொற்று இருந்தால் அணுகவும்.",
+        sp: "Urologist / Nephrologist"
+    },
+    {
+        n: "Gallstones", t: "பித்தப்பை கற்கள்",
+        s: "Sudden pain in upper right abdomen, nausea, bloating.",
+        ts: "வயிற்றின் வலது மேல் பகுதியில் வலி, வாந்தி.",
+        dur: "Varies.", td: "மாறுபடும்.",
+        fa: "Rest, apply a warm compress to the stomach.", tfa: "ஓய்வு, வயிற்றில் வெதுவெதுப்பான ஒத்தடம்.",
+        dt: "Low fat diet, high fiber (Oats, Veggies).", tdt: "குறைந்த கொழுப்பு, அதிக நார்ச்சத்து உணவு.",
+        rem: "Apple cider vinegar with water, lemon juice.", trem: "ஆப்பிள் சீடர் வினிகர், எலுமிச்சை சாறு.",
+        pre: "Maintain a healthy weight, avoid rapid weight loss.", tpre: "உடல் எடையைச் சீராக வைத்தல்.",
+        adv: "Check for jaundice (yellow skin) as a complication.", tadv: "மஞ்சள் காமாலை வருகிறதா எனக் கவனிக்கவும்.",
+        dan: "Severe pain lasting hours, fever, yellow eyes.", tdan: "பல மணிநேர கடும் வலி, காய்ச்சல்.",
+        sh: "If pain is so severe you can't sit still.", tsh: "வலி தாங்க முடியாமல் போனால் உடனே செல்லவும்.",
+        sp: "Gastroenterologist / General Surgeon"
+    },
+    {
+        n: "Malnutrition", t: "ஊட்டச்சத்துக் குறைபாடு",
+        s: "Fatigue, dry skin, thinning hair, slow wound healing.",
+        ts: "சோர்வு, உலர்ந்த தோல், முடி உதிர்தல்.",
+        dur: "Months (to recover).", td: "மாதங்கள்.",
+        fa: "Start with small protein-rich meals immediately.", tfa: "சத்தான உணவுகளைச் சிறிது சிறிதாக உட்கொள்ளவும்.",
+        dt: "Balanced diet (Milk, Eggs, Pulses, Fruits).", tdt: "முட்டை, பால், பருப்பு, பழங்கள்.",
+        rem: "Moringa powder, amla juice, dates.", trem: "முருங்கை பொடி, நெல்லிக்காய், பேரிச்சை.",
+        pre: "Eat varied foods, ensure adequate calorie intake.", tpre: "அனைத்து விதமான உணவுகளையும் உண்ணவும்.",
+        adv: "Consult a dietitian to create a meal plan.", tadv: "உணவு நிபுணரிடம் ஆலோசனை பெறவும்.",
+        dan: "Extreme muscle wasting, vision loss, confusion.", tdan: "உடல் மிகவும் மெலிதல், குழப்பம்.",
+        sh: "If the person is too weak to perform daily tasks.", tsh: "அன்றாட வேலை செய்ய முடியாத பலவீனம் இருந்தால்.",
+        sp: "Dietitian / General Physician"
+    },
+    {
+        n: "Toothache", t: "பல் வலி",
+        s: "Sharp, throbbing, or constant tooth pain, swelling around the gum, headache.",
+    ts: "கடுமையான அல்லது தொடர்ச்சியான பல் வலி, ஈறு வீக்கம், தலைவலி.",
+    dur: "1-3 Days (Seek dentist if it persists).", td: "1-3 நாட்கள் (வலி தொடர்ந்தால் மருத்துவரை அணுகவும்).",
+    fa: "Rinse with warm salt water, use a cold compress on the cheek.", tfa: "வெதுவெதுப்பான உப்பு நீரால் வாய் கொப்பளிக்கவும், கன்னத்தில் ஐஸ் ஒத்தடம் கொடுக்கவும்.",
+    dt: "Soft foods (Mashed potatoes, yogurt). Avoid very hot or cold food.", tdt: "மென்மையான உணவுகள் (தயிர், கூழ்). அதிக சூடான அல்லது குளிர்ந்த உணவைத் தவிர்க்கவும்.",
+    rem: "Clove oil application, chewing guava leaves.", trem: "கிராம்பு எண்ணெய் தடவுதல், கொய்யா இலை மெல்லுதல்.",
+    pre: "Brush twice daily, floss regularly, reduce sugary snacks.", tpre: "தினமும் இருமுறை பல் துலக்குதல், இனிப்பு உணவுகளைக் குறைத்தல்.",
+    adv: "Don't put aspirin directly on the gum as it may burn.", tadv: "ஆஸ்பிரின் மாத்திரையை நேரடியாக ஈறுகளில் வைக்க வேண்டாம்.",
+    dan: "High fever, trouble breathing or swallowing, extreme swelling.", tdan: "அதிக காய்ச்சல், மூச்சு விடுவதில் அல்லது விழுங்குவதில் சிரமம், அதிக வீக்கம்.",
+    sh: "If pain is unbearable or if there is pus (infection).", tsh: "வலி தாங்க முடியாவிட்டால் அல்லது சீழ் கோர்த்திருந்தால்.",
+    sp: "Dentist"
+},
+{
+    n: "Sore Throat", t: "தொண்டை வலி",
+    s: "Pain or scratchy sensation in the throat, difficulty swallowing, swollen glands.",
+    ts: "தொண்டையில் அரிப்பு அல்லது வலி, விழுங்குவதில் சிரமம், கழுத்து வீக்கம்.",
+    dur: "3-7 Days.", td: "3-7 நாட்கள்.",
+    fa: "Saltwater gargle 3-4 times a day, stay hydrated.", tfa: "தினமும் 3-4 முறை உப்பு நீர் கொப்பளிக்கவும், நிறைய தண்ணீர் குடிக்கவும்.",
+    dt: "Warm soups, herbal tea, honey with lemon. Avoid spicy/oily food.", tdt: "சூடான சூப், மூலிகை டீ, தேன். காரம் மற்றும் எண்ணெய் உணவைத் தவிர்க்கவும்.",
+    rem: "Turmeric milk, ginger tea, steam inhalation.", trem: "மஞ்சள் பால், இஞ்சி டீ, ஆவி பிடித்தல்.",
+    pre: "Avoid cold drinks, stay away from smoke, wash hands often.", tpre: "குளிர்ந்த பானங்களைத் தவிர்க்கவும், புகை மற்றும் தூசியிலிருந்து விலகி இருக்கவும்.",
+    adv: "Rest your voice and avoid talking too much.", tadv: "அதிகம் பேசுவதைத் தவிர்த்து தொண்டைக்கு ஓய்வு அளிக்கவும்.",
+    dan: "Difficulty breathing, drooling, severe pain when swallowing.", tdan: "மூச்சுத் திணறல், எச்சில் விழுங்க முடியாத அளவு கடும் வலி.",
+    sh: "If symptoms last more than a week or if you have a high fever.", tsh: "ஒரு வாரத்திற்கு மேல் நீடித்தால் அல்லது அதிக காய்ச்சல் இருந்தால்.",
+    sp: "ENT Specialist / General Physician"
+}
+];
+
+const specialists = [
+    {c: "GP", n: "General Physician", t: "அனைத்து பொதுவான நோய்கள்"},
+    {c: "ENT", n: "Otolaryngologist", t: "காது, மூக்கு, தொண்டை நிபுணர்"},
+    {c: "CARDI", n: "Cardiologist", t: "இதய நோய் நிபுணர்"},
+    {c: "PULMO", n: "Pulmonologist", t: "நுரையீரல் நிபுணர்"},
+    {c: "GASTRO", n: "Gastroenterologist", t: "வயிறு மற்றும் செரிமான நிபுணர்"},
+    {c: "DERMA", n: "Dermatologist", t: "தோல் நோய் நிபுணர்"},
+    {c: "HEMAT", n: "Hematologist", t: "இரத்த நோய் நிபுணர்"},
+    {c: "URO", n: "Urologist", t: "சிறுநீரக நிபுணர்"},
+    {c: "NEURO", n: "Neurologist", t: "மூளை மற்றும் நரம்பு நிபுணர்"},
+    {c: "GYNE", n: "Gynecologist", t: "பெண்கள் மற்றும் மகப்பேறு"},
+    {c: "OPHTH", n: "Ophthalmologist", t: "கண் மருத்துவ நிபுணர்"},
+    {c: "PSYCH", n: "Psychiatrist", t: "மனநல மருத்துவ நிபுணர்"}
+];
+
+// Load UI
+const select = document.getElementById('diseaseSelect');
+const sBody = document.getElementById('specTable');
+
+diseases.forEach((d, i) => {
+    let opt = document.createElement('option');
+    opt.value = i; opt.textContent = `${i+1}. ${d.n} (${d.t})`;
+    select.appendChild(opt);
+});
+
+specialists.forEach(s => {
+    sBody.innerHTML += `<tr><td><b>${s.c}</b></td><td>${s.n}</td><td>${s.t}</td></tr>`;
+});
+
+function updateDisplay(vIdx) {
+    const i = vIdx !== undefined ? vIdx : select.value;
+    const res = document.getElementById('result-area');
+    const grid = document.getElementById('infoGrid');
+    
+    if(i === "") { res.style.display = 'none'; return; }
+    if(vIdx !== undefined) select.value = vIdx;
+
+    const d = diseases[i];
+    res.style.display = 'block';
+    document.getElementById('dTitle').innerText = `${d.n} | ${d.t}`;
+
+    grid.innerHTML = `
+        <div class="card"><span class="label">🩺 Symptoms / அறிகுறிகள்</span><span class="en-text">${d.s}</span><span class="ta-text">${d.ts}</span></div>
+        <div class="card"><span class="label">⏳ Duration / காலம்</span><span class="en-text">${d.dur}</span><span class="ta-text">${d.td}</span></div>
+        <div class="card card-warning"><span class="label">⚡ First Aid / முதலுதவி</span><span class="en-text">${d.fa}</span><span class="ta-text">${d.tfa}</span></div>
+        <div class="card card-success"><span class="label">🥗 Diet / உணவு முறை</span><span class="en-text">${d.dt}</span><span class="ta-text">${d.tdt}</span></div>
+        <div class="card card-success"><span class="label">🌿 Home Remedy / வீட்டு வைத்தியம்</span><span class="en-text">${d.rem}</span><span class="ta-text">${d.trem}</span></div>
+        <div class="card card-success"><span class="label">🛡️ Prevention / தடுப்பு முறைகள்</span><span class="en-text">${d.pre}</span><span class="ta-text">${d.tpre}</span></div>
+        <div class="card"><span class="label">💡 Doctor Advice / மருத்துவர் அறிவுரை</span><span class="en-text">${d.adv}</span><span class="ta-text">${d.tadv}</span></div>
+        <div class="card card-danger"><span class="label">🆘 Danger Signs / ஆபத்து அறிகுறிகள்</span><span class="en-text">${d.dan}</span><span class="ta-text">${d.tdan}</span></div>
+        <div class="card card-danger"><span class="label">🏥 When to seek help? / எப்போது அணுக வேண்டும்?</span><span class="en-text">${d.sh}</span><span class="ta-text">${d.tsh}</span></div>
+        <div class="card"><span class="label">👨‍⚕️ Specialist / நிபுணர்</span><span class="en-text"><b>Consult: ${d.sp}</b></span></div>
+    `;
+    window.scrollTo({ top: 400, behavior: 'smooth' });
+}
+
+// Voice Logic
+const vBtn = document.getElementById('voiceBtn');
+if ('webkitSpeechRecognition' in window) {
+    const rec = new webkitSpeechRecognition();
+    rec.lang = 'en-IN';
+    vBtn.onclick = () => { rec.start(); document.getElementById('vStatus').innerText = "🎤 Listening (English/Tamil)..."; };
+    rec.onresult = (e) => {
+        const text = e.results[0][0].transcript.toLowerCase();
+        document.getElementById('vStatus').innerText = "Found: " + text;
+        const idx = diseases.findIndex(d => text.includes(d.n.toLowerCase()) || text.includes(d.t));
+        if(idx !== -1) updateDisplay(idx);
+    };
+}
+</script>
+</body>
+</html>
